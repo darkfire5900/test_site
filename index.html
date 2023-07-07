@@ -1,125 +1,208 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Wave Model Visualization</title>
-    <style>
-      canvas {
-        border: 1px solid #000;
-      }
-    </style>
-  </head>
-  <body>
-    <canvas id="canvas"></canvas>
+<head>
+    <title>Self-Organization Simulation</title>
+</head>
+<body>
+    <canvas id="simulationCanvas" width="500" height="500"></canvas>
 
     <script>
-      const canvas = document.getElementById("canvas");
-      const ctx = canvas.getContext("2d");
-
-      // Define canvas width and height
-      const width = 200;
-      const height = 200;
-      canvas.width = width;
-      canvas.height = height;
-
-      // Aether represented as 2D array
-      const aether = [];
-
-      // Number of frequency bands to model
-      const numFrequencies = 7;
-
-      function setup() {
-        // Initialize aether array
-        for (let i = 0; i < width; i++) {
-          aether[i] = [];
-          for (let j = 0; j < height; j++) {
-            aether[i][j] = [];
-            for (let f = 0; f < numFrequencies; f++) {
-              // Initialize random wave intensities
-              aether[i][j][f] = Math.random();
+        // Define classes for materials and agents
+        class Material {
+            constructor(reactivity) {
+                this.reactivity = reactivity;
             }
-          }
-        }
-      }
-
-      function draw() {
-        // Clear canvas
-        ctx.clearRect(0, 0, width, height);
-
-        // Diffuse waves
-        const diffusionRate = 0.05;
-        for (let i = 0; i < width; i++) {
-          for (let j = 0; j < height; j++) {
-            for (let f = 0; f < numFrequencies; f++) {
-              const left = i > 0 ? aether[i - 1][j][f] : 0;
-              const right = i < width - 1 ? aether[i + 1][j][f] : 0;
-              const up = j > 0 ? aether[i][j - 1][f] : 0;
-              const down = j < height - 1 ? aether[i][j + 1][f] : 0;
-              const center = aether[i][j][f];
-
-              const diffusionValue =
-                (left + right + up + down - 4 * center) * diffusionRate;
-              aether[i][j][f] += diffusionValue;
-            }
-          }
         }
 
-        // Implement interactions
-        const interactionRate = 0.0001;
-        for (let i = 0; i < width; i++) {
-          for (let j = 0; j < height; j++) {
-            for (let f = 0; f < numFrequencies; f++) {
-              const interactionValue = Math.sin(i * 0.1) * Math.cos(j * 0.05);
-              aether[i][j][f] += interactionRate * interactionValue;
+        class Agent {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
             }
-          }
+
+            move() {
+                // Implement agent movement
+                const direction = Math.floor(Math.random() * 4); // 0: up, 1: right, 2: down, 3: left
+
+                switch (direction) {
+                    case 0:
+                        if (this.y > 0) {
+                            this.y--;
+                        }
+                        break;
+                    case 1:
+                        if (this.x < gridSize - 1) {
+                            this.x++;
+                        }
+                        break;
+                    case 2:
+                        if (this.y < gridSize - 1) {
+                            this.y++;
+                        }
+                        break;
+                    case 3:
+                        if (this.x > 0) {
+                            this.x--;
+                        }
+                        break;
+                }
+            }
+
+            react() {
+                // Implement agent reaction
+                const neighboringMaterial = grid[this.x][this.y + 1];
+
+                if (neighboringMaterial instanceof Material && neighboringMaterial.reactivity > 0) {
+                    // React with neighboring material
+                    // Increase reactivity of the neighboring material
+                    neighboringMaterial.reactivity++;
+                }
+            }
+
+            reproduce() {
+                // Implement agent reproduction
+                const reproductionProbability = 0.1; // Adjust the probability as needed
+
+                if (Math.random() < reproductionProbability) {
+                    // Create a new agent in a random neighboring cell
+                    const neighboringCells = [];
+
+                    if (this.x > 0) {
+                        neighboringCells.push({ x: this.x - 1, y: this.y });
+                    }
+                    if (this.x < gridSize - 1) {
+                        neighboringCells.push({ x: this.x + 1, y: this.y });
+                    }
+                    if (this.y > 0) {
+                        neighboringCells.push({ x: this.x, y: this.y - 1 });
+                    }
+                    if (this.y < gridSize - 1) {
+                        neighboringCells.push({ x: this.x, y: this.y + 1 });
+                    }
+
+                    if (neighboringCells.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * neighboringCells.length);
+                        const { x, y } = neighboringCells[randomIndex];
+
+                        grid[x][y] = new Agent(x, y);
+                    }
+                }
+            }
         }
 
-        // Update particle waves
-        const waveSpeed = 0.01;
-        for (let i = 0; i < width; i++) {
-          for (let j = 0; j < height; j++) {
-            for (let f = 0; f < numFrequencies; f++) {
-              const waveValue = aether[i][j][f];
-              const dx = waveSpeed * Math.cos(waveValue);
-              const dy = waveSpeed * Math.sin(waveValue);
-              const newI = Math.round((i + dx + width) % width);
-              const newJ = Math.round((j + dy + height) % height);
-              aether[newI][newJ][f] = waveValue;
+        // Define reaction rules
+        function react(material1, material2) {
+            // Define reaction logic
+            // Example: If material1.reactivity is greater than material2.reactivity, material1 consumes material2
+            if (material1.reactivity > material2.reactivity) {
+                material1.reactivity += material2.reactivity;
+                material2.reactivity = 0;
+            } else if (material1.reactivity < material2.reactivity) {
+                material2.reactivity += material1.reactivity;
+                material1.reactivity = 0;
             }
-          }
         }
 
-        // Color based on highest frequency waves
-        for (let i = 0; i < width; i++) {
-          for (let j = 0; j < height; j++) {
-            let maxIntensity = -1;
-            let maxFrequency = 1;
-            for (let f = 0; f < numFrequencies; f++) {
-              if (aether[i][j][f] > maxIntensity) {
-                maxIntensity = aether[i][j][f];
-                maxFrequency = f;
-              }
-            }
-            const color = 255 * (maxFrequency / numFrequencies);
-            ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
-            ctx.fillRect(i, j, 1, 1);
-          }
+        // Create the 2D grid environment
+        const gridSize = 50; // Adjust the grid size as needed
+        const cellSize = 10; // Adjust the cell size as needed
+        const canvas = document.getElementById('simulationCanvas');
+        const context = canvas.getContext('2d');
+
+        canvas.width = gridSize * cellSize;
+        canvas.height = gridSize * cellSize;
+
+        const grid = new Array(gridSize);
+        for (let i = 0; i < gridSize; i++) {
+            grid[i] = new Array(gridSize);
         }
 
-        // Animate over time
-        for (let i = 0; i < width; i++) {
-          for (let j = 0; j < height; j++) {
-            for (let f = 0; f < numFrequencies; f++) {
-              aether[i][j][f] += 0.000001;
-            }
-          }
+        // Implement agent behaviors
+        function implementBehaviors(agent) {
+            agent.move();
+            agent.react();
+            agent.reproduce();
         }
 
-        requestAnimationFrame(draw);
-      }
+        // Initialize and populate the simulation
+        function initializeSimulation() {
+            // Add initial materials and agents to the grid
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    if (Math.random() < 0.1) {
+                        grid[i][j] = new Material(1);
+                    } else if (Math.random() < 0.05) {
+                        grid[i][j] = new Agent(i, j);
+                    }
+                }
+            }
+        }
 
-      setup();
-      draw();
+        // Run the main simulation loop
+        function runSimulation() {
+            // Apply agent behaviors and reaction rules
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const cell = grid[i][j];
+
+                    if (cell instanceof Agent) {
+                        implementBehaviors(cell);
+                    }
+                }
+            }
+
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const cell = grid[i][j];
+
+                    if (cell instanceof Material && i < gridSize - 1) {
+                        const neighboringCell = grid[i + 1][j];
+
+                        if (neighboringCell instanceof Material) {
+                            react(cell, neighboringCell);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Collect statistics and visualize
+        function collectStatistics() {
+            // Monitor changes and visualize the simulation
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const cell = grid[i][j];
+
+                    if (cell instanceof Material) {
+                        const color = `rgb(0, 0, ${Math.floor(cell.reactivity * 255 / 10)})`;
+
+                        context.fillStyle = color;
+                        context.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
+                    } else if (cell instanceof Agent) {
+                        context.fillStyle = 'rgb(0, 255, 0)';
+                        context.fillRect(i * cellSize, j * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+        }
+
+        // Call the necessary functions to execute the simulation
+        function startSimulation() {
+            initializeSimulation();
+
+            // Run the simulation for a specific number of iterations or indefinitely
+            const numberOfIterations = 1000; // Adjust the number of iterations as needed
+
+            for (let i = 0; i < numberOfIterations; i++) {
+                runSimulation();
+                collectStatistics();
+            }
+        }
+
+        // Start the simulation
+        startSimulation();
     </script>
-  </body>
+</body>
 </html>
