@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Wave Model Visualization</title>
+    <style>
+      canvas {
+        border: 1px solid #000;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Define canvas width and height
+      const width = 200;
+      const height = 200;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Aether represented as 2D array
+      const aether = [];
+
+      // Number of frequency bands to model
+      const numFrequencies = 7;
+
+      function setup() {
+        // Initialize aether array
+        for (let i = 0; i < width; i++) {
+          aether[i] = [];
+          for (let j = 0; j < height; j++) {
+            aether[i][j] = [];
+            for (let f = 0; f < numFrequencies; f++) {
+              // Initialize random wave intensities
+              aether[i][j][f] = Math.random();
+            }
+          }
+        }
+      }
+
+      function draw() {
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Diffuse waves
+        const diffusionRate = 0.05;
+        for (let i = 0; i < width; i++) {
+          for (let j = 0; j < height; j++) {
+            for (let f = 0; f < numFrequencies; f++) {
+              const left = i > 0 ? aether[i - 1][j][f] : 0;
+              const right = i < width - 1 ? aether[i + 1][j][f] : 0;
+              const up = j > 0 ? aether[i][j - 1][f] : 0;
+              const down = j < height - 1 ? aether[i][j + 1][f] : 0;
+              const center = aether[i][j][f];
+
+              const diffusionValue =
+                (left + right + up + down - 4 * center) * diffusionRate;
+              aether[i][j][f] += diffusionValue;
+            }
+          }
+        }
+
+        // Implement interactions
+        const interactionRate = 0.0001;
+        for (let i = 0; i < width; i++) {
+          for (let j = 0; j < height; j++) {
+            for (let f = 0; f < numFrequencies; f++) {
+              const interactionValue = Math.sin(i * 0.1) * Math.cos(j * 0.05);
+              aether[i][j][f] += interactionRate * interactionValue;
+            }
+          }
+        }
+
+        // Update particle waves
+        const waveSpeed = 0.01;
+        for (let i = 0; i < width; i++) {
+          for (let j = 0; j < height; j++) {
+            for (let f = 0; f < numFrequencies; f++) {
+              const waveValue = aether[i][j][f];
+              const dx = waveSpeed * Math.cos(waveValue);
+              const dy = waveSpeed * Math.sin(waveValue);
+              const newI = Math.round((i + dx + width) % width);
+              const newJ = Math.round((j + dy + height) % height);
+              aether[newI][newJ][f] = waveValue;
+            }
+          }
+        }
+
+        // Color based on highest frequency waves
+        for (let i = 0; i < width; i++) {
+          for (let j = 0; j < height; j++) {
+            let maxIntensity = -1;
+            let maxFrequency = 1;
+            for (let f = 0; f < numFrequencies; f++) {
+              if (aether[i][j][f] > maxIntensity) {
+                maxIntensity = aether[i][j][f];
+                maxFrequency = f;
+              }
+            }
+            const color = 255 * (maxFrequency / numFrequencies);
+            ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.fillRect(i, j, 1, 1);
+          }
+        }
+
+        // Animate over time
+        for (let i = 0; i < width; i++) {
+          for (let j = 0; j < height; j++) {
+            for (let f = 0; f < numFrequencies; f++) {
+              aether[i][j][f] += 0.000001;
+            }
+          }
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      setup();
+      draw();
+    </script>
+  </body>
+</html>
